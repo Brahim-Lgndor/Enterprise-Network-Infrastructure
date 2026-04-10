@@ -1,0 +1,64 @@
+-----------------conf switch management--------------------------
+-----------------------------------------------------------------
+
+enable
+clock set 11:53:00 1 Dec 2025
+conf t
+hostname SW_Management
+enable secret Enable@2025
+service password-encryption
+line con 0
+password Console@2025
+login
+exit
+ip domain-name it.ac.ma
+crypto key generate rsa 
+1024
+ip ssh version 2
+ip ssh time-out 60
+ip ssh authentication-retries 3
+line vty 0 15
+transport input ssh
+transport output ssh
+logging synchronous
+login local
+aaa new-model
+aaa authentication login default local
+username manager password Ssh@2025
+do wr
+---------------------------------------------
+                     vtp
+---------------------------------------------
+vtp version 2
+vtp domain it.ac.ma
+vtp password vtp@2025
+vtp mode client
+exit
+-----------------------------------------------
+----------------------------------------------
+interface vlan 200
+description Management_Interface
+ip address 200.200.200.201 255.255.0.0 
+no shutdown
+exit
+ip default-gateway 200.200.255.254
+
+---------------------------------------------
+==========================================
+interface gig 0/2
+switchport mode trunk
+switchport trunk allowed vlan 200,201 
+no sh
+exit
+================================================
+===============================================
+
+interface gig 0/1
+switchport mode access
+switchport access vlan 200     
+switchport voice vlan 201 
+no shutdown     
+exit
+do wr
+==============================================
+===================================
