@@ -1,0 +1,272 @@
+-----------------------------------------------------------------------------------------------
+---------------------------###### Config de switch CORE   ## --------------------------------------------------
+-----------------------------------------------------------------------------------------------
+enable
+clock set 9:30:00 17 Nov 2025
+conf t 
+hostname Core_Compus_Centrale
+enable secret Enable@2025
+service password-encryption
+line con 0
+password Console@2025
+login
+exec-timeout 15
+exit
+ip domain-name it.ac.ma
+crypto key generate rsa 
+1024
+ip ssh version 2
+ip ssh time-out 60
+ip ssh authentication-retries 3
+line vty 0 15
+transport input ssh
+transport output ssh
+logging synchronous
+login local
+aaa new-model
+aaa authentication login default local
+username manager password Ssh@2025
+
+do wr
+------------------------------------------------------------------------
+--------------------------------------------------------------------------
+----------------Vtp serveur-------------------------------
+vtp version 3
+vtp domain it.ac.ma
+vtp password vtp@2025
+vtp mode server
+
+----------------------------------------------------------------------------
+----------------------------------------------------------------------
+-------------Creation Vlan---------------------------------------------------------
+vlan 100
+name D_Dhcp
+vlan 110
+name D_Etd
+vlan 120
+name D_Prof
+vlan 130
+name D_Adm
+vlan 140
+name D_invitee
+vlan 190
+name D_wieless
+vlan 200
+name D_Management
+vlan 101
+name V_Dhcp
+vlan 111
+name V_Etd
+vlan 121
+name V_Prof
+vlan 131
+name V_Adm
+vlan 141
+name V_invitee
+vlan 191
+name V_wieless
+vlan 201
+name V_Management
+----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- ModeTrunk ------------------------------------------------------------------------interface de gestion virtuel--
+-----------------------------------------------------
+interface vlan 200
+ip address 200.200.255.201 255.255.0.0
+no sh
+exit
+
+do wr
+---liaison avec SW admin----------
+interface gig 1/6
+switchport mode trunk
+switchport trunk allowed vlan add 200
+switchport trunk allowed vlan add 201
+--------------------------------------------------
+-------liaison avec Comm DC servers--------
+interface gig 1/5 
+switchport mode trunk 
+switchport trunk allowed vlan add 100
+switchport trunk allowed vlan add 101
+switchport trunk allowed vlan add 110
+switchport trunk allowed vlan add 111
+switchport trunk allowed vlan add 120
+switchport trunk allowed vlan add 121
+switchport trunk allowed vlan add 130
+switchport trunk allowed vlan add 131
+switchport trunk allowed vlan add 140
+switchport trunk allowed vlan add 141
+switchport trunk allowed vlan add 190
+switchport trunk allowed vlan add 191
+switchport trunk allowed vlan add 200
+switchport trunk allowed vlan add 201
+-------------------------------------------------------------------
+--------------------------------------------------------------------
+-----------------------Liaison avec Comm Distubution site 1 & site 2---------------------------------
+--------------------------------------------------------------------------
+
+interface range gig 1/3-4
+switchport mode trunk 
+switchport trunk allowed vlan add 100
+switchport trunk allowed vlan add 101
+switchport trunk allowed vlan add 110
+switchport trunk allowed vlan add 111
+switchport trunk allowed vlan add 120
+switchport trunk allowed vlan add 121
+switchport trunk allowed vlan add 130
+switchport trunk allowed vlan add 131
+switchport trunk allowed vlan add 140
+switchport trunk allowed vlan add 141
+switchport trunk allowed vlan add 190
+switchport trunk allowed vlan add 191
+switchport trunk allowed vlan add 200,201
+---------------------------------------------------------------------
+
+---------------------------------------------------------------------
+======================NTP Client : pour tous les commutateurs =========================
+conf t
+ntp server 200.200.200.200
+ntp authenticate 
+ntp trusted-key 1
+ntp authentication-key 1 md5 ntp@2025
+do wr
+exit
+======================syslog :pour tous les commutateurs =========================
+• Configuration de syslog : 
+- Activer le Syslog sur le serveur
+
+- Configurer le Syslog sur le routeur/switch : 
+-> Activer le syslog
+-> Préciser le serveur Syslog
+-> Activer le débogage des messages syslog
+-> Horodater les messages syslog (optionnel)
+
+conf t
+logging on 
+logging 200.200.200.200 
+logging trap debugging
+service timestamps log datetime msec 
+do wr
+exit
+
+
+
+------------------------------------------------
+#### REDIRECTION DES REQUETES DHCP -AGENT RELAI --100.0.0.100=@IP DHCP SERVER
+interface vlan 100
+ip add 100.0.0.1 255.0.0.0
+ip helper-address 100.0.0.100
+no sh
+interface vlan 110
+ip add 110.0.0.1 255.0.0.0
+ip helper-address 100.0.0.100
+no sh
+interface vlan 120
+ip add 120.0.0.1 255.0.0.0
+ip helper-address 100.0.0.100
+no sh
+interface vlan 130
+ip add 130.0.0.1 255.0.0.0
+ip helper-address 100.0.0.100
+no sh
+interface vlan 140
+ip add 140.0.0.1 255.0.0.0
+ip helper-address 100.0.0.100
+no sh
+interface vlan 190
+ip add 190.0.0.1 255.0.0.0
+ip helper-address 100.0.0.100
+no sh
+interface vlan 101
+ip add 101.0.0.1 255.0.0.0
+ip helper-address 100.0.0.100
+no sh
+interface vlan 111
+ip add 111.0.0.1 255.0.0.0
+ip helper-address 100.0.0.100
+no sh
+interface vlan 121
+ip add 121.0.0.1 255.0.0.0
+ip helper-address 100.0.0.100
+no sh
+interface vlan 131
+ip add 131.0.0.1 255.0.0.0
+ip helper-address 100.0.0.100
+no sh
+interface vlan 141
+ip add 141.0.0.1 255.0.0.0
+ip helper-address 100.0.0.100
+no sh
+interface vlan 191
+ip add 191.0.0.1 255.0.0.0
+ip helper-address 100.0.0.100
+no sh
+interface vlan 201
+ip add 201.201.201.1 255.255.255.0
+ip helper-address 100.0.0.100
+no sh
+exit
+do wr
+=======================ACTIVATIN DU ROUTAGE INTER VLAN ========================
+
+ip routing
+do wr
+------------------------------------------------
+ip access-list extended BLOCK_VLANS
+ deny ip 110.0.0.0 0.255.255.255 120.0.0.0 0.255.255.255   
+ deny ip 110.0.0.0 0.255.255.255 130.0.0.0 0.255.255.255  
+ deny ip 110.0.0.0 0.255.255.255 140.0.0.0 0.255.255.255  
+ deny ip 110.0.0.0 0.255.255.255 190.0.0.0 0.255.255.255  
+ deny ip 110.0.0.0 0.255.255.255 200.0.0.0 0.255.255.255  
+ deny ip 120.0.0.0 0.255.255.255 130.0.0.0 0.255.255.255  
+ deny ip 120.0.0.0 0.255.255.255 140.0.0.0 0.255.255.255  
+ deny ip 120.0.0.0 0.255.255.255 190.0.0.0 0.255.255.255  
+ deny ip 120.0.0.0 0.255.255.255 200.0.0.0 0.255.255.255 
+ deny ip 130.0.0.0 0.255.255.255 140.0.0.0 0.255.255.255  
+ deny ip 130.0.0.0 0.255.255.255 190.0.0.0 0.255.255.255  
+ deny ip 130.0.0.0 0.255.255.255 200.0.0.0 0.255.255.255 
+ deny ip 140.0.0.0 0.255.255.255 190.0.0.0 0.255.255.255 
+ deny ip 140.0.0.0 0.255.255.255 200.0.0.0 0.255.255.255
+ deny ip 190.0.0.0 0.255.255.255 200.0.0.0 0.255.255.255 
+ permit ip any any
+
+
+interface vlan 110
+ ip access-group BLOCK_VLANS in
+interface vlan 120
+ ip access-group BLOCK_VLANS in
+interface vlan 130
+ ip access-group BLOCK_VLANS in
+interface vlan 140
+ ip access-group BLOCK_VLANS in
+interface vlan 190
+ ip access-group BLOCK_VLANS in
+interface vlan 200
+ ip access-group BLOCK_VLANS in
+
+# Activer la VACL
+vlan filter BLOCK_TRAFFIC vlan-list 110,120,130,140,190,200
+
+--------------------------------------------------------------
+CORE 
+ip access-list extended MANAGE_SWITCHES
+permit tcp host 200.200.200.254 host 200.200.255.254 
+deny ip any host 200.200.255.254
+
+ACCESS
+ip access-list extended MANAGE_SW_DIST_FSTS
+permit tcp host 200.200.200.254 host 200.200.255.(access) 
+deny ip any host 200.200.255.200
+exit
+access-list 10 permit 200.200.100.100
+access-list 10 deny any
+line vty 0 15
+ access-class 10 in
+exit 
+do wr
+
+
+
+
+
+
+
+
